@@ -2,14 +2,18 @@ import socket
 import threading
 
 PORT = 50000
+nextPort = PORT + 1
 
+# Set up a welcome socket.
 connection = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 connection.bind(('', PORT))
 connection.listen(1)
 print("The server is ready!")
 
+# The main map used to store keys and values
 map = {}
 
+# Take a command string, perform the appropriate actions, and return the appropriate message.
 def parse(command):
     args = [s for s in command.split(' ') if len(s) > 0]
     if len(args) > 0:
@@ -55,6 +59,7 @@ def parse(command):
                 acc += map[key] + '\n'
             return acc[:-1]
 
+# Manage a connection through a new client-specific socket.
 def runService(local, port):
     client, addr = local.accept()
     while True:
@@ -71,24 +76,19 @@ def runService(local, port):
             print(f"Connection lost with client on port {port}...")
             return
 
-
-nextPort = PORT + 1
-
-heard = False
 while True:
     # Constantly listen for connecting clients
     client, addr = connection.accept()
     print(f"Received connection from {addr}, assigning to port {nextPort}")
-    if addr: # We've received a connection!
+    if addr:
+        # We've received a connection!
+        # Create a new listen socket for it, then send the port of that socket
+        # back to the client.
         local = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         local.bind(('', nextPort))
         local.listen(1)
         client.send(str(nextPort).encode())
 
+        # Spawn a new thread to manage this connection.
         threading.Thread(target=runService, args=(local, nextPort)).start()
         nextPort += 1
-
-    # Pass the client's message to parse(), then send back what parse() returns
-
-    # Close the connection to the client
-    #arrivingSocket.close()
